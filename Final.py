@@ -6,7 +6,7 @@ def monte_carlo_simulation(n_trials, user_params, opponent_params):
     foul_strategy_wins = 0
 
     for _ in range(n_trials):
-        # Simulate starting with 30 seconds on the clock
+        # Simulate starting with 30 seconds on the clock for each strategy
         if simulate_three_pointer_strategy(user_params, opponent_params, 30):
             three_pointer_wins += 1
         if simulate_foul_strategy(user_params, opponent_params, 30):
@@ -20,15 +20,21 @@ def monte_carlo_simulation(n_trials, user_params, opponent_params):
 
 
 def simulate_three_pointer_strategy(user_params, opponent_params, time_left):
-    """Simulate the 3-pointer strategy."""
-    time_left -= 4  # Attempting a 3-pointer takes 4 seconds
-    if random.random() < user_params["three_point_percentage"]:
-        return True  # Win immediately
+    """Simulate the 3-pointer strategy with time adjustments."""
+    while time_left > 0:
+        # Attempt a 3-pointer (takes 4 seconds)
+        time_left -= 4
+        if time_left <= 0:
+            break  # Break if time runs out after shot attempt
+        if random.random() < user_params["three_point_percentage"]:
+            return True  # Win immediately if the shot is made
 
-    # Missed 3-pointer; simulate defensive rebound and subsequent shot
-    time_left -= 7  # Defensive rebound and shot attempt
-    if time_left > 0 and random.random() < opponent_params["two_point_percentage"]:
-        return False  # Opponent scores, lose the game
+        # Missed 3-pointer, opponent gets defensive rebound (7 seconds)
+        time_left -= 7
+        if time_left <= 0:
+            break  # Break if time runs out after opponent rebound
+        if random.random() < opponent_params["two_point_percentage"]:
+            return False  # Opponent scores and wins
 
     # Overtime chance if time runs out and no one scores
     if time_left <= 0 and random.random() < user_params["overtime_win_percentage"]:
@@ -38,24 +44,28 @@ def simulate_three_pointer_strategy(user_params, opponent_params, time_left):
 
 
 def simulate_foul_strategy(user_params, opponent_params, time_left):
-    """Simulate the foul strategy."""
-    time_left -= 2  # Fouling takes 2 seconds
+    """Simulate the foul strategy with time adjustments."""
+    while time_left > 0:
+        # Fouling takes 2 seconds
+        time_left -= 2
+        if time_left <= 0:
+            break  # Break if time runs out after foul
 
-    # Opponent free throws
-    points_from_free_throws = 0
-    for _ in range(2):  # Two free throws
-        if random.random() < opponent_params["free_throw_percentage"]:
-            points_from_free_throws += 1
+        # Opponent free throws (no time deduction for the actual free throw attempts)
+        points_from_free_throws = 0
+        for _ in range(2):  # Two free throws
+            if random.random() < opponent_params["free_throw_percentage"]:
+                points_from_free_throws += 1
 
-    # Defensive rebound and subsequent shot
-    time_left -= 7  # Defensive possession
-    if time_left <= 0:
-        return False  # Time ran out
-
-    if points_from_free_throws < 2:  # Less than 2 points from free throws
-        time_left -= 3  # Attempting a 2-point shot takes 3 seconds
-        if time_left > 0 and random.random() < user_params["two_point_percentage"]:
-            return True  # Win by scoring 2 points
+        # Defensive rebound and subsequent shot (7 seconds)
+        time_left -= 7
+        if time_left <= 0:
+            break  # Break if time runs out after defensive rebound
+        if points_from_free_throws < 2:  # Less than 2 points from free throws
+            # Attempt a 2-point shot (3 seconds)
+            time_left -= 3
+            if time_left > 0 and random.random() < user_params["two_point_percentage"]:
+                return True  # Win by scoring 2 points
 
     return False  # Lose
 
